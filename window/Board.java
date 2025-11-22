@@ -2,6 +2,7 @@ package window;
 
 import logic.BoardLogic;
 import logic.Cell;
+import assets.Icons;
 
 import javax.swing.*;
 import java.awt.event.MouseAdapter;
@@ -16,6 +17,9 @@ public class Board {
     static Timer gameTimer;
     static JLabel timerLabel;
     static int timeElapsed = 0;
+    static JPanel  fullPanel;
+    public static final ImageIcon FLAG = Icons.FLAG;
+    public static final ImageIcon BOMB = Icons.BOMB;
 
     public static void show(BoardLogic logicBoard){
         int rows = logicBoard.rows;
@@ -48,6 +52,7 @@ public class Board {
 
                         } else if (SwingUtilities.isLeftMouseButton(e)) {
                             revealCell(row, col, logicBoard, buttons);
+                            checkWin(logicBoard, buttons);
                         }
                     }
                 });
@@ -61,7 +66,7 @@ public class Board {
             timerLabel.setText("Time: " + timeElapsed + "s");
         });
 
-        JPanel fullPanel = new JPanel(new BorderLayout());
+        fullPanel = new JPanel(new BorderLayout());
         fullPanel.add(topPanel, BorderLayout.NORTH);
         fullPanel.add(panel, BorderLayout.CENTER);
 
@@ -77,12 +82,12 @@ public class Board {
 
         cell.isFlagged = !cell.isFlagged;
 
-        if (cell.isFlagged) {
-            btn.setText("🚩");
+       if (cell.isFlagged) {
+            btn.setIcon(FLAG);
             flagsRemaining--;
         } 
         else {
-            btn.setText("");
+            btn.setIcon(null);
             flagsRemaining++;
         }
     }
@@ -109,8 +114,10 @@ public class Board {
         }
 
         if (cell.isBomb) {
-            btn.setText("💣");
-            //btn.setBackground(Color.RED);
+            btn.setIcon(BOMB);
+            btn.setFocusable(true);
+            btn.setContentAreaFilled(true);
+            btn.setBackground(Color.RED);
             gameOver(logicBoard, buttons);
             return;
         }
@@ -120,7 +127,6 @@ public class Board {
             btn.setForeground(getNumberColor(cell.adjacentBombs));
         } 
         else {
-            btn.setText("");
             int rows = logicBoard.rows;
             int cols = logicBoard.cols;
 
@@ -136,45 +142,51 @@ public class Board {
             }
         }
 
-        checkWin(logicBoard, buttons);
     }
 
+
+
     private static void gameOver(BoardLogic logicBoard, JButton[][] buttons) {
+        isGameOver = true;
+        gameTimer.stop();
+        
+        
+        
+
         for(int r = 0; r < logicBoard.rows; r++){
             for(int c = 0; c < logicBoard.cols; c++){
                 Cell cell = logicBoard.grid[r][c];
                 JButton btn = buttons[r][c];
 
-                btn.setEnabled(false);
+                //btn.setEnabled(false);
 
                 if(cell.isBomb){
-                    btn.setText("💣");
+                    btn.setIcon(BOMB);
                     btn.setBackground(Color.RED);
                 }
                 else if(cell.isFlagged && !cell.isBomb){
-                    btn.setText("❌");//incorrect flag
+                    btn.setIcon(BOMB);
+                    btn.setText("Incorrect Flag");//incorrect flag
                     btn.setBackground(Color.PINK);
                 }
             }
         }
 
-        isGameOver = true;
-        gameTimer.stop();
-
-        int option = JOptionPane.showOptionDialog(
-            null,
+        
+        // Centered relative to the game panel
+        JOptionPane.showMessageDialog(
+            fullPanel, // Pass the main panel you created in show()
             "Game Over! You hit a bomb!",
             "Game Over",
-            JOptionPane.DEFAULT_OPTION,
-            JOptionPane.INFORMATION_MESSAGE,
-            null,
-            new String[] { "New Game" },
-            "New Game"
+            JOptionPane.INFORMATION_MESSAGE
         );
-        if (option == 0 || option == JOptionPane.CLOSED_OPTION) {
-            restartGame();
-        }
+
+        restartGame();
+
+    
     }
+
+
 
     private static void checkWin(BoardLogic logicBoard, JButton[][] buttons) {
         if (logicBoard.revealedSafeCells == logicBoard.totalSafeCells) {
@@ -187,19 +199,15 @@ public class Board {
             isGameOver = true;
             gameTimer.stop();
 
-            int option = JOptionPane.showOptionDialog(
-                null,
+
+            // Centered relative to the game panel
+            JOptionPane.showMessageDialog(
+                fullPanel, // Pass the main panel you created in show()
                 "Congratulations! You cleared the board!",
                 "You Win!",
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.INFORMATION_MESSAGE,
-                null,
-                new String[] { "New Game" },
-                "New Game"
+                JOptionPane.INFORMATION_MESSAGE
             );
-            if (option == 0 || option == JOptionPane.CLOSED_OPTION) {
-                restartGame();
-            }
+            restartGame();
         }
     }
 
@@ -225,4 +233,5 @@ public class Board {
             default: return Color.BLACK;
         }
     }
+
 }
